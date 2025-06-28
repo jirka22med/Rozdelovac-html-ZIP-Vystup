@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <title>Rozdělovač + ZIP stahovač</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d1117;
+      color: #c9d1d9;
+      padding: 2rem;
+      display: flex; /* Pro centrování obsahu */
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    textarea {
+      width: 100%;
+      max-width: 800px; /* Omezení šířky pro lepší čitelnost */
+      height: 200px;
+      background-color: #161b22;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-family: monospace;
+      resize: vertical; /* Umožní vertikální změnu velikosti */
+    }
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 800px;
+        margin-bottom: 1rem;
+    }
+    .input-group label {
+        margin-bottom: 0.5rem;
+        color: #58a6ff;
+        font-weight: bold;
+    }
+    .input-group input[type="text"] {
+        padding: 0.5rem;
+        background-color: #161b22;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+    button {
+      padding: 0.7rem 1.5rem; /* Větší padding */
+      background-color: #238636;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin: 0.5rem; /* Změněno z 0.5rem 0.5rem 1rem 0 */
+      border-radius: 4px;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+        background-color: #2ea043;
+        transform: translateY(-2px);
+    }
+    button:active {
+        transform: translateY(0);
+    }
+    .message {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        border-radius: 4px;
+        font-weight: bold;
+        text-align: center;
+    }
+    .message.success {
+        background-color: #28a745;
+        color: white;
+    }
+    .message.error {
+        background-color: #dc3545;
+        color: white;
+    }
+    .message.info {
+        background-color: #007bff;
+        color: white;
+    }
+    .spinner {
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top: 4px solid #fff;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 10px;
+        display: none; /* Skryté ve výchozím stavu */
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    pre {
+      background: #161b22;
+      padding: 1rem;
+      overflow-x: auto;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      white-space: pre-wrap; /* Pro zalamování dlouhých řádků */
+      word-wrap: break-word; /* Pro zalamování velmi dlouhých slov */
+      max-width: 800px;
+      width: 100%;
+    }
+    h3 {
+      margin-top: 2rem;
+      color: #58a6ff;
+      text-align: center; /* Centrování nadpisů výstupu */
+      width: 100%;
+      max-width: 800px;
+    }
+    .output-section {
+        width: 100%;
+        max-width: 800px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rozdělovač HTML + ZIP Výstup</h1>
+  
+  <textarea id="input" placeholder="Vlož svůj HTML projekt sem..."></textarea>
+  <div class="input-group">
+      <label for="htmlFileName">Název HTML souboru (např. index.html):</label>
+      <input type="text" id="htmlFileName" value="index.html">
+  </div>
+  <div class="input-group">
+      <label for="cssFileName">Název CSS souboru (např. style.css):</label>
+      <input type="text" id="cssFileName" value="style.css">
+  </div>
+  <div class="input-group">
+      <label for="jsFileName">Název JavaScript souboru (např. script.js):</label>
+      <input type="text" id="jsFileName" value="script.js">
+  </div>
+  <div class="input-group">
+      <label for="zipFileName">Název ZIP archivu (např. projekt.zip):</label>
+      <input type="text" id="zipFileName" value="projekt.zip">
+  </div>
+  
+  <button id="splitButton" onclick="rozdeliProjekt()">Rozdělit Projekt <span id="splitButtonSpinner" class="spinner"></span></button>
+  <button id="downloadButton" onclick="stahnoutZIP()">Stáhnout jako ZIP <span id="downloadButtonSpinner" class="spinner"></span></button>
+  
+  <div id="messages" class="message hidden"></div>
+
+  <div class="output-section">
+      <h3>index.html</h3>
+      <pre id="htmlOut"></pre>
+      <h3>style.css</h3>
+      <pre id="cssOut"></pre>
+      <h3>script.js</h3>
+      <pre id="jsOut"></pre>
+  </div>
+</body>
+
+<script>
+var htmlText = '';
+var cssText = '';
+var jsText = '';
+
+// Funkce pro jednoduché formátování kódu
+function formatHtml(html) {
+    const div = document.createElement('div');
+    div.innerHTML = html.trim();
+    let formatted = '';
+    let indent = 0;
+    const indentChar = '  '; // Dvě mezery pro odsazení
+
+    function processNode(node, level) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent.trim();
+            if (text) {
+                formatted += indentChar.repeat(level) + text + '\n'; // Přidáme odsazení i pro textové uzly
+            }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+            const tagName = node.tagName.toLowerCase();
+            const isSelfClosing = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'].includes(tagName);
+
+            formatted += indentChar.repeat(level) + '<' + tagName;
+            for (let i = 0; i < node.attributes.length; i++) {
+                formatted += ' ' + node.attributes[i].name + '="' + node.attributes[i].value + '"';
+            }
+            formatted += (isSelfClosing ? '/>' : '>'); // Samouzavírací tag
+
+            if (!isSelfClosing && (node.children.length > 0 || node.textContent.trim())) {
+                formatted += '\n';
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    processNode(node.childNodes[i], level + 1);
+                }
+                formatted += indentChar.repeat(level) + '</' + tagName + '>\n';
+            } else if (!isSelfClosing) {
+                formatted += '</' + tagName + '>\n';
+            } else {
+                formatted += '\n'; // Nový řádek pro samouzavírací tagy
+            }
+        }
+    }
+    
+    // Použijte DOMParser pro robustnější parsování HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // Zpracujeme HTML, HEAD a BODY, aby se zachovala základní struktura
+    if (doc.documentElement) {
+        processNode(doc.documentElement, 0);
+    }
+
+    return formatted.trim();
+}
+
+// Velmi jednoduché formátování CSS/JS (jen odsazení, ne plnohodnotné minifikace/pretty)
+function formatCode(code) {
+    // Nahradí { za {\n   a přidá odsazení
+    code = code.replace(/\{/g, '{\n  ');
+    // Nahradí ; za ;\n (pokud za ním není už zalomení řádku)
+    code = code.replace(/;(?!\s*\n)/g, ';\n');
+    // Nahradí } za \n}\n a odstraní mezery před }
+    code = code.replace(/\s*\}/g, '\n}\n');
+    // Odstraní vícenásobné prázdné řádky
+    code = code.replace(/\n\s*\n/g, '\n\n');
+    // Odstraní odsazení na začátku řádků, které následují po prázdném řádku
+    code = code.replace(/\n\s+(?=\n)/g, '\n');
+    return code.trim();
+}
+
+function showMessage(msg, type) {
+    const msgDiv = document.getElementById('messages');
+    msgDiv.textContent = msg;
+    msgDiv.className = `message ${type}`;
+    msgDiv.classList.remove('hidden');
+    // Skrytí zprávy po několika sekundách
+    setTimeout(() => {
+        msgDiv.classList.add('hidden');
+    }, 5000);
+}
+
+function showSpinner(buttonId) { 
+    const spinnerElement = document.getElementById(buttonId + 'Spinner'); 
+    const buttonElement = document.getElementById(buttonId); 
+
+    if (spinnerElement) { 
+        spinnerElement.style.display = 'inline-block';
+    }
+    if (buttonElement) { 
+        buttonElement.disabled = true;
+    }
+}
+
+function hideSpinner(buttonId) { 
+    const spinnerElement = document.getElementById(buttonId + 'Spinner'); 
+    const buttonElement = document.getElementById(buttonId); 
+
+    if (spinnerElement) { 
+        spinnerElement.style.display = 'none';
+    }
+    if (buttonElement) { 
+        buttonElement.disabled = false;
+    }
+}
+
+async function rozdeliProjekt() {
+    showSpinner('splitButton');
+    const input = document.getElementById('input').value;
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.classList.add('hidden');
+
+    if (!input.trim()) {
+        showMessage('Prosím, vložte HTML kód do textového pole!', 'error');
+        hideSpinner('splitButton');
+        return;
+    }
+
+    try {
+        let tempHtml = input;
+        cssText = '';
+        jsText = '';
+
+        // Krok 1: Extrahujeme a odstraníme VŠECHNY interní <style> a <script> bloky
+        // a uložíme si je do proměnných cssText a jsText
+        tempHtml = tempHtml.replace(/<style(?:\s[^>]*)?>([\s\S]*?)<\/style>/gi, (match, content) => {
+            cssText += content.trim() + '\n\n';
+            return ''; // Nahradíme style blok prázdným řetězcem
+        });
+
+        tempHtml = tempHtml.replace(/<script(?![^>]*src="[^"]*")(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi, (match, content) => {
+            jsText += content.trim() + '\n\n';
+            return ''; // Nahradíme interní script blok prázdným řetězcem
+        });
+        
+        cssText = cssText.trim(); // Finální trim
+        jsText = jsText.trim();   // Finální trim
+
+        // Krok 2: Připravíme externí odkazy na základě názvů souborů
+        const cssFileName = document.getElementById('cssFileName').value;
+        const jsFileName = document.getElementById('jsFileName').value;
+        const newCssLink = cssText ? `<link rel="stylesheet" href="${cssFileName}">` : '';
+        const newJsScript = jsText ? `<scr` + `ipt src="${jsFileName}"></scr` + `ipt>` : '';
+
+        // Krok 3: Vložíme nové externí odkazy do HTML s ohledem na existující
+        // Zde je klíčová změna: Budeme pracovat s DOM, abychom zachovali pořadí externích odkazů
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(tempHtml, 'text/html');
+        const head = doc.head;
+        const body = doc.body;
+
+        // Pomocná funkce pro vložení elementu před referenční uzel nebo na konec rodiče
+        function insertBeforeOrAppend(parent, newElement, referenceNode = null) {
+            if (referenceNode && parent.contains(referenceNode)) {
+                parent.insertBefore(newElement, referenceNode);
+            } else {
+                parent.appendChild(newElement);
+            }
+        }
+        
+        // Pomocná funkce pro vytvoření elementu z HTML stringu
+        function createElementFromHTML(htmlString) {
+            const div = document.createElement('div');
+            div.innerHTML = htmlString.trim();
+            return div.firstChild; 
+        }
+
+        // 3a. Vkládání CSS linku do <head>
+        if (newCssLink && head) {
+            const newLinkElement = createElementFromHTML(newCssLink);
+            // Zkusíme najít první ne-link element v head, nebo to vložíme na konec head
+            const firstNonLinkInHead = head.querySelector(':not(link)');
+            insertBeforeOrAppend(head, newLinkElement, firstNonLinkInHead);
+        } else if (newCssLink && !head) {
+            // Pokud head chybí, vytvoříme ho a vložíme
+            const newHead = doc.createElement('head');
+            newHead.appendChild(createElementFromHTML(newCssLink));
+            if (doc.documentElement) {
+                 insertBeforeOrAppend(doc.documentElement, newHead, doc.body || null); // Před body nebo na konec html
+            } else {
+                 finalHtml = `<!DOCTYPE html>\n<html>\n${newHead.outerHTML}\n<body>${tempHtml}</body>\n</html>`;
+                 doc.documentElement.innerHTML = finalHtml; // Nucené re-parse pro složitý případ
+            }
+        }
+
+        // 3b. Vkládání JS scriptu na konec <body>
+        if (newJsScript && body) {
+            const newScriptElement = createElementFromHTML(newJsScript);
+            body.appendChild(newScriptElement);
+        } else if (newJsScript && !body) {
+            // Pokud body chybí, vytvoříme ho a vložíme skript na konec
+            const newBody = doc.createElement('body');
+            newBody.appendChild(createElementFromHTML(newJsScript));
+            if (doc.documentElement) {
+                doc.documentElement.appendChild(newBody);
+            } else {
+                finalHtml = `<!DOCTYPE html>\n<html>\n<head></head>\n<body>${tempHtml}${newBody.outerHTML}</body>\n</html>`;
+                doc.documentElement.innerHTML = finalHtml; // Nucené re-parse
+            }
+        }
+        
+        // Získání konečného HTML po úpravách DOM
+        // Použijeme doc.documentElement.outerHTML pro získání celého HTML,
+        // nebo v případě velmi složitých vstupů můžeme použít upravenou tempHtml.
+        // Pro co největší spolehlivost s DOMParserem vezmeme outerHTML.
+        htmlText = doc.documentElement ? doc.documentElement.outerHTML : tempHtml;
+
+
+        // Zobrazení výstupu
+        document.getElementById('htmlOut').textContent = formatHtml(htmlText);
+        document.getElementById('cssOut').textContent = formatCode(cssText) || '/* Žádný vložený CSS kód nebyl nalezen. */';
+        document.getElementById('jsOut').textContent = formatCode(jsText) || '// Žádný vložený JavaScript kód nebyl nalezen.';
+
+        // Upozornění na chybějící sekce
+        if (!cssText.trim()) {
+            showMessage('Upozornění: Vstupní HTML neobsahuje žádný vložený CSS kód ve <style> tagu.', 'info');
+        }
+        if (!jsText.trim()) {
+            showMessage('Upozornění: Vstupní HTML neobsahuje žádný vložený JavaScript kód ve <script> tagu.', 'info');
+        }
+        if (cssText.trim() && jsText.trim()) {
+             showMessage('Projekt byl úspěšně rozdělen!', 'success');
+        } else if (!cssText.trim() && !jsText.trim()) {
+            showMessage('Projekt byl úspěšně rozdělen, ale neobsahoval žádný vložený CSS ani JavaScript kód.', 'success');
+        }
+
+
+    } catch (e) {
+        showMessage('Chyba při rozdělování projektu: ' + e.message, 'error');
+        console.error("Chyba při rozdělování:", e);
+    } finally {
+        hideSpinner('splitButton');
+    }
+}
+
+async function stahnoutZIP() {
+    showSpinner('downloadButton');
+    const messagesDiv = document.getElementById('messages');
+    messagesDiv.classList.add('hidden');
+
+    if (!htmlText.trim() && !cssText.trim() && !jsText.trim()) {
+        showMessage('Prosím, nejprve rozdělete projekt nebo vložte kód!', 'error');
+        hideSpinner('downloadButton');
+        return;
+    }
+
+    const zip = new JSZip();
+    zip.file(document.getElementById('htmlFileName').value, htmlText.trim());
+    
+    // Přidáváme soubory pouze, pokud nejsou prázdné
+    if (cssText.trim() && cssText !== '/* Žádný vložený CSS kód nebyl nalezen. */') {
+        zip.file(document.getElementById('cssFileName').value, cssText);
+    }
+    if (jsText.trim() && jsText !== '// Žádný vložený JavaScript kód nebyl nalezen.') {
+        zip.file(document.getElementById('jsFileName').value, jsText);
+    }
+    
+    try {
+        const content = await zip.generateAsync({type: "blob"});
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(content);
+        a.download = document.getElementById('zipFileName').value;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        showMessage('Projekt byl úspěšně stažen jako ZIP!', 'success');
+
+    } catch (e) {
+        showMessage('Chyba při stahování ZIPu: ' + e.message, 'error');
+        console.error("Chyba při stahování ZIPu:", e);
+    } finally {
+        hideSpinner('downloadButton');
+    }
+}
+</script>
+</html>
