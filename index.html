@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="cs">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rozdělovač projektu – HTML, CSS, JS a ZIP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+  </head>
+
+  <body>
+    <div class="shell">
+      <aside class="side">
+        <div class="cap">Rozdělovač</div>
+        <button class="blk or" id="bSplit" type="button">Rozdělit projekt</button>
+        <button class="blk bl" id="bFmt" type="button">Zformátovat kód</button>
+        <button class="blk li" id="bZip" type="button">Stáhnout ZIP</button>
+        <button class="blk bl" id="bLoad" type="button">Načíst soubor</button>
+        <button class="blk pe" id="bClear" type="button">Vyčistit vše</button>
+        <div class="fill"></div>
+        <div class="hint">Ctrl + Enter v poli rozdělí projekt.</div>
+      </aside>
+
+      <main>
+        <header class="top">
+          <h1>Rozdělení HTML na index, styl a skript</h1>
+          <div class="leds" id="leds" aria-hidden="true"></div>
+        </header>
+
+        <section class="panel">
+          <label for="input">Vložený projekt</label>
+          <textarea id="input" spellcheck="false" placeholder="Vlož celý HTML soubor se styly a skripty, nebo ho přetáhni sem."></textarea>
+          <div class="meta" id="count">Pole je prázdné.</div>
+          <input type="file" id="file" class="hidden-file" accept=".html,.htm,.txt,text/html,text/plain">
+        </section>
+
+        <section class="panel o">
+          <div class="fields">
+            <div><label for="htmlFileName">Název HTML souboru</label><input type="text" id="htmlFileName" value="index.html" autocomplete="off"></div>
+            <div><label for="cssFileName">Název CSS souboru</label><input type="text" id="cssFileName" value="style.css" autocomplete="off"></div>
+            <div><label for="jsFileName">Název JavaScript souboru</label><input type="text" id="jsFileName" value="script.js" autocomplete="off"></div>
+            <div><label for="zipFileName">Název ZIP archivu</label><input type="text" id="zipFileName" value="projekt.zip" autocomplete="off"></div>
+          </div>
+          <label class="chk"><input type="checkbox" id="dedent" checked><span>Odstranit společné odsazení kódu<small>Jen posune celý blok doleva, nic jiného nepřepisuje. Víceřádkové šablonové řetězce v JS tím mohou změnit mezery na začátku řádků.</small></span></label>
+        </section>
+
+        <section class="panel l">
+          <div class="lbl">Formátování kódu</div>
+          <div class="fields">
+            <div><label for="fmtLang">Jazyk kódu</label><select id="fmtLang">
+                <option value="auto">Poznat automaticky</option>
+                <option value="html">HTML</option>
+                <option value="css">CSS</option>
+                <option value="js">JavaScript</option>
+              </select></div>
+            <div><label for="fmtIndent">Odsazení</label><select id="fmtIndent">
+                <option value="2">2 mezery</option>
+                <option value="4">4 mezery</option>
+                <option value="tab">Tabulátor</option>
+              </select></div>
+            <div><label for="fmtWrap">Zalamování řádků</label><select id="fmtWrap">
+                <option value="0">Bez zalamování</option>
+                <option value="80">80 znaků</option>
+                <option value="100">100 znaků</option>
+                <option value="120">120 znaků</option>
+              </select></div>
+          </div>
+          <label class="chk"><input type="checkbox" id="fmtOut"><span>Po rozdělení zformátovat i výstupní soubory<small>Tlačítko „Zformátovat kód“ přepíše vložený text přehledně odsazenou verzí. Mění jen mezery a zalomení, ne funkci kódu. Rozbitý kód ale neopraví.</small></span></label>
+        </section>
+
+        <section class="panel p">
+          <div class="lbl">Výsledek</div>
+          <div class="tabs" role="tablist" aria-label="Výstupní soubory">
+            <button class="tab" role="tab" data-k="html" aria-selected="true" type="button"><b id="tHtml">index.html</b><small id="mHtml">zatím nic</small></button>
+            <button class="tab" role="tab" data-k="css" aria-selected="false" type="button"><b id="tCss">style.css</b><small id="mCss">zatím nic</small></button>
+            <button class="tab" role="tab" data-k="js" aria-selected="false" type="button"><b id="tJs">script.js</b><small id="mJs">zatím nic</small></button>
+          </div>
+          <pre id="view" tabindex="0">Tady se objeví rozdělený kód.</pre>
+          <div class="acts">
+            <button class="sm" id="bCopy" type="button" disabled>Kopírovat tento soubor</button>
+            <button class="sm" id="bOne" type="button" disabled>Stáhnout tento soubor</button>
+            <button class="sm" id="bFmtOne" type="button" disabled>Zformátovat tento soubor</button>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+
+</html>
