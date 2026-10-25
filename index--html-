@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rozdělovač projektu – HTML, CSS, JS a ZIP</title>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.15.1/beautify-html.min.js"></script>
+<style>
+:root{--bg:#05060a;--panel:#0d0f18;--line:#262b40;--text:#e9e6dc;--mute:#9aa1bd;--or:#ff9c00;--pe:#ffcc99;--li:#cc99cc;--bl:#9999ff;--rd:#e07070;--gr:#99cc77;--h:'Antonio','Arial Narrow',Impact,sans-serif;--m:'Cascadia Mono',Consolas,'SF Mono',monospace}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 'Segoe UI',system-ui,sans-serif;min-height:100vh}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pe);outline-offset:2px}
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);gap:10px;max-width:1280px;margin:0 auto;padding:16px}
+.side{display:flex;flex-direction:column;gap:8px}
+.cap{background:var(--or);color:#000;border-radius:56px 0 0 0;min-height:110px;padding:18px 20px;display:flex;align-items:flex-end;font:700 32px/1 var(--h)}
+.blk{border:0;color:#000;text-align:left;padding:12px 20px;min-height:52px;border-radius:0 28px 28px 0;font:700 20px/1.1 var(--h);cursor:pointer;transition:filter .15s}
+.blk:hover:not(:disabled){filter:brightness(1.15)}
+.blk:active:not(:disabled){filter:brightness(.9)}
+.blk:disabled{opacity:.5;cursor:wait}
+.blk.or{background:var(--or)}.blk.li{background:var(--li)}.blk.bl{background:var(--bl)}.blk.pe{background:var(--pe)}
+.fill{flex:1;min-height:20px;background:var(--rd);border-radius:0 0 0 56px;opacity:.85}
+.hint{font-size:13px;color:var(--mute);padding:6px 4px 0}
+main{display:flex;flex-direction:column;gap:10px;min-width:0}
+.top{display:flex;align-items:center;gap:16px;background:var(--panel);border-left:10px solid var(--li);border-radius:0 28px 28px 0;padding:14px 22px}
+h1{margin:0;font:700 28px/1.1 var(--h);letter-spacing:.02em;flex:1;color:var(--pe)}
+.leds{display:flex;gap:5px}
+.leds i{width:9px;height:22px;border-radius:5px;background:var(--line)}
+.leds.run i{animation:led .7s calc(var(--i)*45ms) both}
+@keyframes led{0%{background:var(--line)}35%{background:var(--or);box-shadow:0 0 10px var(--or)}100%{background:var(--bl);box-shadow:none}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:0 22px 22px 0;border-left:10px solid var(--bl);padding:16px 18px}
+.panel.o{border-left-color:var(--or)}.panel.p{border-left-color:var(--pe)}
+label,.lbl{display:block;font:700 18px/1.2 var(--h);color:var(--or);margin-bottom:6px;letter-spacing:.03em}
+textarea{width:100%;height:240px;resize:vertical;background:#080a11;border:1px solid var(--line);border-radius:8px;padding:12px;font:14px/1.5 var(--m);tab-size:2}
+textarea.drag{border-color:var(--or);background:#14110a}
+.meta{font-size:13px;color:var(--mute);margin-top:6px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px 16px}
+input[type=text]{width:100%;background:#080a11;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-family:var(--m);font-size:14px}
+input[type=text]:focus{border-color:var(--bl)}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:15px;color:var(--text)}
+.chk input{margin-top:5px;accent-color:var(--or);width:16px;height:16px}
+.chk small{display:block;color:var(--mute);font-size:13px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.tab{background:#161a29;border:1px solid var(--line);border-radius:18px 18px 0 0;padding:6px 16px;cursor:pointer;text-align:left;line-height:1.25}
+.tab b{display:block;font:700 17px/1.2 var(--h);letter-spacing:.03em}
+.tab small{color:var(--mute);font-size:12px}
+.tab[aria-selected=true]{background:var(--pe);color:#000;border-color:var(--pe)}
+.tab[aria-selected=true] small{color:#3a2c18}
+pre{margin:0;background:#080a11;border:1px solid var(--line);border-radius:8px;padding:14px;max-height:520px;overflow:auto;font:13.5px/1.5 var(--m);white-space:pre;tab-size:2}
+.acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.sm{background:transparent;border:1px solid var(--bl);color:var(--bl);border-radius:16px;padding:5px 16px;cursor:pointer;transition:background .15s,color .15s}
+.sm:hover:not(:disabled){background:var(--bl);color:#000}
+.sm:disabled{opacity:.4;cursor:not-allowed}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);max-width:min(620px,92vw);padding:12px 20px;border-radius:0 22px 22px 0;border-left:10px solid;background:#12151f;font-weight:600;opacity:0;visibility:hidden;transition:opacity .25s,transform .25s,visibility .25s;z-index:9}
+.toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.toast.ok{border-color:var(--gr)}.toast.err{border-color:var(--rd)}.toast.info{border-color:var(--bl)}
+select{width:100%;background:#080a11;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px}select:focus{border-color:var(--bl)}.panel.l{border-left-color:var(--li)}
+.hidden-file{display:none}
+@media(max-width:760px){.shell{grid-template-columns:1fr;padding:10px}.cap{min-height:64px;border-radius:32px 0 0 0;font-size:26px}.side{flex-direction:row;flex-wrap:wrap}.blk{flex:1 1 140px;border-radius:0 22px 22px 0}.fill,.hint{display:none}h1{font-size:22px}.leds{display:none}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="cap">Rozdělovač</div>
+    <button class="blk or" id="bSplit" type="button">Rozdělit projekt</button>
+    <button class="blk bl" id="bFmt" type="button">Zformátovat kód</button>
+    <button class="blk li" id="bZip" type="button">Stáhnout ZIP</button>
+    <button class="blk bl" id="bLoad" type="button">Načíst soubor</button>
+    <button class="blk pe" id="bClear" type="button">Vyčistit vše</button>
+    <div class="fill"></div>
+    <div class="hint">Ctrl + Enter v poli rozdělí projekt.</div>
+  </aside>
+
+  <main>
+    <header class="top">
+      <h1>Rozdělení HTML na index, styl a skript</h1>
+      <div class="leds" id="leds" aria-hidden="true"></div>
+    </header>
+
+    <section class="panel">
+      <label for="input">Vložený projekt</label>
+      <textarea id="input" spellcheck="false" placeholder="Vlož celý HTML soubor se styly a skripty, nebo ho přetáhni sem."></textarea>
+      <div class="meta" id="count">Pole je prázdné.</div>
+      <input type="file" id="file" class="hidden-file" accept=".html,.htm,.txt,text/html,text/plain">
+    </section>
+
+    <section class="panel o">
+      <div class="fields">
+        <div><label for="htmlFileName">Název HTML souboru</label><input type="text" id="htmlFileName" value="index.html" autocomplete="off"></div>
+        <div><label for="cssFileName">Název CSS souboru</label><input type="text" id="cssFileName" value="style.css" autocomplete="off"></div>
+        <div><label for="jsFileName">Název JavaScript souboru</label><input type="text" id="jsFileName" value="script.js" autocomplete="off"></div>
+        <div><label for="zipFileName">Název ZIP archivu</label><input type="text" id="zipFileName" value="projekt.zip" autocomplete="off"></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="dedent" checked><span>Odstranit společné odsazení kódu<small>Jen posune celý blok doleva, nic jiného nepřepisuje. Víceřádkové šablonové řetězce v JS tím mohou změnit mezery na začátku řádků.</small></span></label>
+    </section>
+
+    <section class="panel l">
+      <div class="lbl">Formátování kódu</div>
+      <div class="fields">
+        <div><label for="fmtLang">Jazyk kódu</label><select id="fmtLang"><option value="auto">Poznat automaticky</option><option value="html">HTML</option><option value="css">CSS</option><option value="js">JavaScript</option></select></div>
+        <div><label for="fmtIndent">Odsazení</label><select id="fmtIndent"><option value="2">2 mezery</option><option value="4">4 mezery</option><option value="tab">Tabulátor</option></select></div>
+        <div><label for="fmtWrap">Zalamování řádků</label><select id="fmtWrap"><option value="0">Bez zalamování</option><option value="80">80 znaků</option><option value="100">100 znaků</option><option value="120">120 znaků</option></select></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="fmtOut"><span>Po rozdělení zformátovat i výstupní soubory<small>Tlačítko „Zformátovat kód“ přepíše vložený text přehledně odsazenou verzí. Mění jen mezery a zalomení, ne funkci kódu. Rozbitý kód ale neopraví.</small></span></label>
+    </section>
+
+    <section class="panel p">
+      <div class="lbl">Výsledek</div>
+      <div class="tabs" role="tablist" aria-label="Výstupní soubory">
+        <button class="tab" role="tab" data-k="html" aria-selected="true" type="button"><b id="tHtml">index.html</b><small id="mHtml">zatím nic</small></button>
+        <button class="tab" role="tab" data-k="css" aria-selected="false" type="button"><b id="tCss">style.css</b><small id="mCss">zatím nic</small></button>
+        <button class="tab" role="tab" data-k="js" aria-selected="false" type="button"><b id="tJs">script.js</b><small id="mJs">zatím nic</small></button>
+      </div>
+      <pre id="view" tabindex="0">Tady se objeví rozdělený kód.</pre>
+      <div class="acts">
+        <button class="sm" id="bCopy" type="button" disabled>Kopírovat tento soubor</button>
+        <button class="sm" id="bOne" type="button" disabled>Stáhnout tento soubor</button>
+        <button class="sm" id="bFmtOne" type="button" disabled>Zformátovat tento soubor</button>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const files = { html: null, css: null, js: null };
+let active = 'html', sig = '', timer;
+
+/* ---------- pomocné funkce ---------- */
+function toast(msg, type) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + (type || 'ok') + ' show';
+  clearTimeout(timer);
+  timer = setTimeout(() => t.classList.remove('show'), 5500);
+}
+const bytes = s => new Blob([s]).size;
+const kb = n => n < 1024 ? n + ' B' : (n / 1024).toFixed(1) + ' kB';
+const lines = s => s ? s.split('\n').length : 0;
+function saveBlob(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name.split('/').pop();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+}
+function safeName(v, def, ext) {
+  v = (v || '').trim().replace(/\\/g, '/').replace(/[<>:"|?*\u0000-\u001f]/g, '');
+  v = v.split('/').filter(p => p && p !== '.' && p !== '..').join('/') || def;
+  return /\.[a-z0-9]+$/i.test(v) ? v : v + '.' + ext;
+}
+function names() {
+  const n = {
+    html: safeName($('htmlFileName').value, 'index.html', 'html').split('/').pop(),
+    css: safeName($('cssFileName').value, 'style.css', 'css'),
+    js: safeName($('jsFileName').value, 'script.js', 'js'),
+    zip: safeName($('zipFileName').value, 'projekt.zip', 'zip').split('/').pop()
+  };
+  if (new Set([n.html, n.css, n.js].map(x => x.toLowerCase())).size < 3) {
+    toast('Názvy HTML, CSS a JS souboru musí být navzájem různé.', 'err');
+    return null;
+  }
+  return n;
+}
+const signature = () => [$('input').value, $('htmlFileName').value, $('cssFileName').value, $('jsFileName').value, $('dedent').checked, $('fmtOut').checked, $('fmtIndent').value, $('fmtWrap').value].join('\u0001');
+
+/* ---------- jádro: rozdělení projektu ---------- */
+function dedent(t) {
+  t = t.replace(/\r\n?/g, '\n').replace(/^(?:[ \t]*\n)+/, '').replace(/\s+$/, '');
+  const L = t.split('\n');
+  let min = Infinity;
+  for (const l of L) if (l.trim()) min = Math.min(min, l.match(/^[ \t]*/)[0].length);
+  if (!isFinite(min) || min === 0) return L.join('\n');
+  return L.map(l => l.slice(Math.min(min, l.match(/^[ \t]*/)[0].length))).join('\n');
+}
+function attr(a, n) {
+  const r = a.match(new RegExp('(?:^|\\s)' + n + '\\s*=\\s*(?:"([^"]*)"|\'([^\']*)\'|([^\\s"\'>]+))', 'i'));
+  return r ? (r[1] !== undefined ? r[1] : r[2] !== undefined ? r[2] : r[3]) : null;
+}
+const ATTRS = '((?:"[^"]*"|\'[^\']*\'|[^\'">])*)';
+const CLASSIC = /^(?:text|application)\/(?:x-)?(?:javascript|ecmascript)$/i;
+
+function splitProject(src, n, doDedent) {
+  const cleanup = t => doDedent ? dedent(t) : t.replace(/\r\n?/g, '\n').trim();
+  /* pořadí: komentář | <style> | <script> – komentáře se přeskočí beze změny */
+  const re = new RegExp('<' + '!--[\\s\\S]*?--' + '>|([ \\t]*)<style\\b' + ATTRS + '>([\\s\\S]*?)<\\/style\\s*>[ \\t]*\\r?\\n?|([ \\t]*)<script\\b' + ATTRS + '>([\\s\\S]*?)<\\/script\\s*>[ \\t]*\\r?\\n?', 'gi');
+  const css = [], js = [];
+  let kept = 0, linkPlaced = false;
+  const TOKEN = '\u0001CSSLINK\u0001';
+
+  let out = src.replace(re, (m, si, sa, sb, ji, ja, jb) => {
+    if (m.charAt(1) === '!') return m;                       // komentář
+    if (sa !== undefined) {                                   // <style>
+      const body = cleanup(sb);
+      if (!body) return '';
+      const media = (attr(sa, 'media') || '').trim();
+      css.push(media && media.toLowerCase() !== 'all' ? '@media ' + media + ' {\n' + body.replace(/^/gm, '  ') + '\n}' : body);
+      if (linkPlaced) return '';
+      linkPlaced = true;
+      return si + TOKEN;
+    }
+    if (/\ssrc\s*=/i.test(' ' + ja)) return m;                // externí skript
+    const type = (attr(ja, 'type') || '').trim();
+    if (type && !CLASSIC.test(type)) { kept++; return m; }    // module, JSON-LD, importmap, šablony…
+    const body = cleanup(jb);
+    if (body) js.push(body);
+    return '';
+  });
+
+  if (linkPlaced) out = out.replace(TOKEN, () => '<link rel="stylesheet" href="' + n.css + '">\n');
+  if (js.length) {
+    const tag = '<scr' + 'ipt src="' + n.js + '"></scr' + 'ipt>\n';
+    const i = out.toLowerCase().lastIndexOf('</body');
+    if (i >= 0) {
+      const before = out.slice(0, i).replace(/[ \t]*$/, '');
+      const prev = before.replace(/\s+$/, '').split('\n').pop();
+      const ind = prev.match(/^[ \t]*/)[0] || '  ';
+      out = before + (before.endsWith('\n') ? '' : '\n') + ind + tag + out.slice(i);
+    } else out = out.replace(/\s*$/, '\n') + tag;
+  }
+  return { html: out.replace(/\r\n?/g, '\n').trim() + '\n', css: css.join('\n\n') + (css.length ? '\n' : ''), js: js.join('\n\n') + (js.length ? '\n' : ''), nCss: css.length, nJs: js.length, kept };
+}
+
+/* ---------- formátování ---------- */
+function fmtOpts() {
+  const i = $('fmtIndent').value;
+  return { tab: i === 'tab', size: parseInt(i, 10) || 2, wrap: parseInt($('fmtWrap').value, 10) || 0 };
+}
+function detect(s) {
+  const t = s.trim();
+  if (/^<(?:!doctype|html|head|body|[a-z][\w-]*[\s>\/])/i.test(t)) return 'html';
+  if (/^(?:@[\w-]+[^{;]*[{;]|[^{};()=]+\{)/.test(t) && !/\b(?:function|const|let|var|return|class)\b|=>/.test(t)) return 'css';
+  return 'js';
+}
+function beautify(code, lang) {
+  if (typeof js_beautify === 'undefined' || typeof css_beautify === 'undefined' || typeof html_beautify === 'undefined') {
+    throw new Error('Knihovna pro formátování se nenačetla. Zkontroluj připojení k internetu.');
+  }
+  const o = fmtOpts();
+  const base = { indent_size: o.size, indent_char: o.tab ? '\t' : ' ', indent_with_tabs: o.tab, wrap_line_length: o.wrap, preserve_newlines: true, max_preserve_newlines: 2, end_with_newline: true, eol: '\n' };
+  if (lang === 'css') return css_beautify(code, Object.assign({ newline_between_rules: true }, base));
+  if (lang === 'html') return html_beautify(code, Object.assign({ indent_inner_html: true }, base));
+  return js_beautify(code, Object.assign({ brace_style: 'collapse,preserve-inline' }, base));
+}
+const LANG = { html: 'HTML', css: 'CSS', js: 'JavaScript' };
+function formatInput() {
+  const v = $('input').value;
+  if (!v.trim()) { toast('Vlož kód, který chceš zformátovat.', 'err'); return; }
+  const sel = $('fmtLang').value, lang = sel === 'auto' ? detect(v) : sel;
+  try {
+    $('input').value = beautify(v, lang);
+    countUpdate();
+    ledRun();
+    toast('Zformátováno jako ' + LANG[lang] + '.', 'ok');
+  } catch (e) { console.error(e); toast('Chyba při formátování: ' + e.message, 'err'); }
+}
+function formatOutput() {
+  const f = files[active];
+  if (!f) return;
+  try { f.text = beautify(f.text, active); render(); toast('Zformátováno: ' + f.name, 'ok'); }
+  catch (e) { console.error(e); toast('Chyba při formátování: ' + e.message, 'err'); }
+}
+
+/* ---------- zobrazení ---------- */
+const TAB = { html: ['tHtml', 'mHtml', 'Žádný HTML kód.'], css: ['tCss', 'mCss', '/* Ve vstupu nebyl žádný vložený CSS kód. */'], js: ['tJs', 'mJs', '// Ve vstupu nebyl žádný vložený JavaScript.'] };
+function render() {
+  for (const k in TAB) {
+    const f = files[k];
+    $(TAB[k][0]).textContent = f ? f.name : ({ html: 'index.html', css: 'style.css', js: 'script.js' })[k];
+    $(TAB[k][1]).textContent = f ? lines(f.text) + ' řádků · ' + kb(bytes(f.text)) : 'prázdné';
+  }
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.k === active)));
+  const f = files[active];
+  $('view').textContent = f ? f.text : TAB[active][2];
+  $('bCopy').disabled = $('bOne').disabled = $('bFmtOne').disabled = !f;
+}
+function ledRun() {
+  const l = $('leds');
+  l.classList.remove('run');
+  void l.offsetWidth;
+  l.classList.add('run');
+}
+
+/* ---------- akce ---------- */
+function run(quiet) {
+  const src = $('input').value;
+  if (!src.trim()) { toast('Vlož HTML kód nebo načti soubor.', 'err'); return false; }
+  const n = names();
+  if (!n) return false;
+  try {
+    const r = splitProject(src, n, $('dedent').checked);
+    let fmtErr = '';
+    if ($('fmtOut').checked) {
+      try {
+        r.html = beautify(r.html, 'html');
+        if (r.css) r.css = beautify(r.css, 'css');
+        if (r.js) r.js = beautify(r.js, 'js');
+      } catch (e) { fmtErr = e.message; }
+    }
+    files.html = { name: n.html, text: r.html };
+    files.css = r.css ? { name: n.css, text: r.css } : null;
+    files.js = r.js ? { name: n.js, text: r.js } : null;
+    if (!files[active]) active = 'html';
+    sig = signature();
+    render();
+    if (!quiet) {
+      ledRun();
+      const parts = ['Hotovo: vyjmuto ' + r.nCss + '× CSS a ' + r.nJs + '× JS.'];
+      if (r.kept) parts.push('Ponecháno ' + r.kept + ' skriptů typu module / JSON / šablona.');
+      if (fmtErr) parts.push('Formátování se nepovedlo (soubory zůstaly neformátované): ' + fmtErr);
+      toast(parts.join(' '), fmtErr ? 'err' : r.nCss || r.nJs ? 'ok' : 'info');
+    }
+    return true;
+  } catch (e) {
+    console.error(e);
+    toast('Chyba při rozdělování: ' + e.message, 'err');
+    return false;
+  }
+}
+async function makeZip() {
+  if (typeof JSZip === 'undefined') { toast('Knihovna JSZip se nenačetla. Zkontroluj připojení k internetu.', 'err'); return; }
+  if (!(files.html && sig === signature()) && !run(true)) return;
+  const n = names();
+  if (!n) return;
+  const b = $('bZip');
+  b.disabled = true;
+  try {
+    const z = new JSZip();
+    for (const k in files) if (files[k]) z.file(files[k].name, files[k].text);
+    saveBlob(await z.generateAsync({ type: 'blob', compression: 'DEFLATE' }), n.zip);
+    toast('ZIP „' + n.zip + '“ je stažený.', 'ok');
+  } catch (e) {
+    console.error(e);
+    toast('Chyba při tvorbě ZIPu: ' + e.message, 'err');
+  } finally { b.disabled = false; }
+}
+async function readFile(f) {
+  if (!f) return;
+  try {
+    $('input').value = await f.text();
+    if (/\.html?$/i.test(f.name)) $('htmlFileName').value = f.name;
+    countUpdate();
+    toast('Načteno: ' + f.name, 'info');
+  } catch (e) { toast('Soubor se nepodařilo přečíst: ' + e.message, 'err'); }
+}
+function countUpdate() {
+  const v = $('input').value;
+  $('count').textContent = v ? lines(v) + ' řádků · ' + kb(bytes(v)) : 'Pole je prázdné.';
+}
+
+/* ---------- události ---------- */
+for (let i = 0; i < 18; i++) { const s = document.createElement('i'); s.style.setProperty('--i', i); $('leds').appendChild(s); }
+$('bSplit').addEventListener('click', () => run(false));
+$('bZip').addEventListener('click', makeZip);
+$('bLoad').addEventListener('click', () => $('file').click());
+$('bFmt').addEventListener('click', formatInput);
+$('bFmtOne').addEventListener('click', formatOutput);
+$('file').addEventListener('change', e => { readFile(e.target.files[0]); e.target.value = ''; });
+$('bClear').addEventListener('click', () => {
+  $('input').value = '';
+  files.html = files.css = files.js = null;
+  active = 'html'; sig = '';
+  countUpdate(); render();
+  toast('Vše vyčištěno.', 'info');
+});
+$('input').addEventListener('input', countUpdate);
+$('input').addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(false); } });
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { active = t.dataset.k; render(); }));
+$('bCopy').addEventListener('click', async () => {
+  const f = files[active];
+  if (!f) return;
+  try { await navigator.clipboard.writeText(f.text); toast('Zkopírováno: ' + f.name, 'ok'); }
+  catch (e) { toast('Kopírování se nepovedlo. Označ text ručně a zkopíruj ho.', 'err'); }
+});
+$('bOne').addEventListener('click', () => {
+  const f = files[active];
+  if (f) saveBlob(new Blob([f.text], { type: 'text/plain;charset=utf-8' }), f.name);
+});
+['dragenter', 'dragover'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); $('input').classList.add('drag'); }));
+['dragleave', 'drop'].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); $('input').classList.remove('drag'); }));
+document.addEventListener('drop', e => readFile(e.dataTransfer && e.dataTransfer.files[0]));
+
+countUpdate();
+render();
+})();
+</script>
+</body>
+</html>
